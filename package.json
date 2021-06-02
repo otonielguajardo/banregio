@@ -2,7 +2,11 @@
     "name": "banregio-node",
     "version": "1.0.0",
     "scripts": {
-        "serve": "ts-node index.ts"
+        "migrate": "npx knex migrate:latest",
+        "seed": "npx knex seed:run",
+        "start": "npm run migrate && npm run seed && ts-node index.ts",
+        "rollback": "npx knex migrate:rollback",
+        "test": "ts-node test.ts"
     },
     "devDependencies": {
         "@types/node": "^15.6.2",
@@ -11,6 +15,7 @@
     "dependencies": {
         "dotenv": "^10.0.0",
         "knex": "^0.95.6",
+        "moment": "^2.29.1",
         "sqlite3": "^5.0.2"
     },
     "keywords": [],

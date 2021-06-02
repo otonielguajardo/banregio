@@ -1,21 +1,16 @@
 
 exports.up = function (knex) {
 	return knex.schema
-		.createTable("accounts", (table) => {
-			table.increments('id').primary();
-			table.string('client_id');
-			table.decimal('amount');
-			table.string('status');
-		})
+		.dropTableIfExists("loans")
 		.createTable("loans", (table) => {
 			table.increments('id').primary();
 			table.string('client_id');
-			table.dateTime('date');
+			table.datetime('date');
 			table.decimal('amount');
 			table.string('status');
 		});
 };
 
 exports.down = function (knex) {
-	return knex.schema.dropTable('accounts').dropTable('loans')
+	return knex.schema.dropTableIfExists('loans');
 };

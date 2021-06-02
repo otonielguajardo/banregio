@@ -1,28 +1,26 @@
 import { AccountModel, asyncForEach, database, LoanModel, PaymentModel } from './utils';
-const readline = require('readline');
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
+import moment from 'moment';
+const SQL_DATE_FORMAT = 'YYYY-MM-DD H:mm:ss';
+const BAN_DATE_FORMAT = 'DD-MMM-YY';
 
 const start = async () => {
-    let current_date = '15-feb-21';
+    //
+    const x_current_date = '15-feb-21';
+    const x_interest = 7.5;
+    const x_commercial_year_days = 360;
+    let affected_accounts: Array<number> = [];
 
-    rl.question('Fecha (en formato 15-feb-21)', (response) => {
-        console.log(response);
-    });
-    rl.close();
-
-    console.log('helo');
-    const hello = true;
-    if (hello) return false;
+    console.log('\x1b[33m%s\x1b[0m', '# Inicialización de Base de Datos completada');
 
     // recorrer la tabla de Cuentas de Débito que están Activas
     let accounts: Array<AccountModel> = await database('accounts').select('*').where('status', 'active');
 
+    console.log('\x1b[33m%s\x1b[0m', '# Cuentas Activas');
+    console.table(accounts);
+
     await asyncForEach(accounts, async (account: AccountModel) => {
         //
-        let amount = account.amount;
+        let account_balance = account.amount;
 
         let loans: Array<LoanModel> = await database('loans')
             .select('*')
@@ -34,7 +32,7 @@ const start = async () => {
         await asyncForEach(loans, async (loan: LoanModel) => {
             //
             // Considera que se realiza el cobro solo de los Pagos que se puedan realizar completos, es decir que el saldo en la Cuenta sea mayor al Pago.
-            if (amount > loan.amount) {
+            if (account_balance > loan.amount) {
                 //
                 // Si se aplica el Pago es necesario cambiar el Estado del Préstamo de Pendiente a Pagado
                 await database('loans')
@@ -42,24 +40,53 @@ const start = async () => {
                     .where('id', loan.id)
                     .then(async () => {
                         //
-                        amount = amount - loan.amount;
+                        let term = moment(x_current_date, BAN_DATE_FORMAT).diff(
+                            moment(loan.date, SQL_DATE_FORMAT),
+                            'days'
+                        );
+                        let interest = (loan.amount * term * x_interest) / x_commercial_year_days;
+                        let tax = interest * x_interest;
+                        let amount = loan.amount + interest + tax;
 
-                        let payload: PaymentModel = {
+                        console.log(
+                            `# ${account.id} pagó el préstamo ${loan.id} (${loan.amount.toFixed(
+                                2
+                            )}) | ${account_balance.toFixed(2)} - ${amount.toFixed(2)} = ${(
+                                account_balance - amount
+                            ).toFixed(2)}`
+                        );
+
+                        account_balance = account_balance - amount;
+                        affected_accounts.push(account.id);
+
+                        let payload = {
                             account_id: account.id,
-                            term: '',
-                            amount: 0,
-                            interest: 0,
-                            tax: 0,
+                            client_id: account.client_id,
+                            term,
+                            amount: amount.toFixed(2),
+                            interest: interest.toFixed(2),
+                            tax: tax.toFixed(2),
                         };
 
-                        database('payments').insert(payload);
+                        await database('payments').insert(payload);
                     });
             }
         });
 
         // y en la Cuenta de Débito se debe reducir el Monto descontando el Pago.
-        await database('accounts').update({ amount }).where('id', account.id);
+        await database('accounts')
+            .update({ amount: account_balance.toFixed(2) })
+            .where('id', account.id);
     });
+
+    let result_accounts: Array<AccountModel> = await database('accounts').select('*').whereIn('id', affected_accounts);
+    let result_payments: Array<PaymentModel> = await database('payments').select('*');
+
+    console.log('\x1b[33m%s\x1b[0m', `# Cuentas afectadas`);
+    console.table(result_accounts);
+
+    console.log('\x1b[33m%s\x1b[0m', `# Todos los Pagos`);
+    console.table(result_payments);
 };
 
 start();
