@@ -1,6 +1,8 @@
 # Prueba Técnica Banregio (Node + Typescript + Knex)
 
-Este proyecto es parte de una prueba técnica solicitada por Banregio, en la que realizé multiples ejercicios. Incluye su base de datos Sqlite, la cual se migra y siembra automaticamente al correr la aplicación.
+Este proyecto es parte de una prueba técnica solicitada por Banregio, en la que realizé multiples ejercicios.
+
+Incluye su base de datos Sqlite, la cual se migra y siembra automaticamente al correr la aplicación.
 
 ## Screenshot
 
@@ -26,6 +28,5 @@ El comando migra y siembra la base de datos antes de iniciar la aplicación.
 
 ## Troubleshooting
 
-Asegurarse de haber instalado las dependencias del proyecto con `npm install`
-
-Ejecutar `npm run rollback` si se tiene problemas con la migración/sembrado de la base de datos.
+- Asegurarse de haber instalado las dependencias del proyecto con `npm install`
+- Ejecutar `npm run rollback` si se tiene problemas con la migración/sembrado de la base de datos.
